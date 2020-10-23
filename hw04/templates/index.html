@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="ko">
+    <head>
+        <!-- Required meta tags -->
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <!-- Bootstrap CSS -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+              integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm"
+              crossorigin="anonymous">
+        <!-- Optional JavaScript -->
+        <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+                integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+                crossorigin="anonymous"></script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+                integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+                crossorigin="anonymous"></script>
+        <link href="https://fonts.googleapis.com/css2?family=Poor+Story&display=swap" rel="stylesheet">
+        <title>스타벅스 텀블러</title>
+
+        <style>
+            * {
+                font-family: 'Poor Story', cursive;
+            }
+
+            .wrap {
+                width: 500px;
+                margin: 0 auto;
+            }
+
+            .image {
+                display: block;
+                margin: 0 auto;
+            }
+
+            .price {
+                font-size: 16px;
+            }
+
+            .exchange{
+                color: blue;
+            }
+            .btn {
+                display: block;
+                margin: 20px auto;
+            }
+        </style>
+
+        <script>
+            $(document).ready(function () {
+                $('#order_list>tbody').html('');
+                $.ajax({
+                    type: "GET",
+                    url: "https://api.manana.kr/exchange/rate.json",
+                    data: {},
+                    success: function (response) {
+                        let excRate = response[1]['rate'];
+                        $('#dollar-won').append(excRate);
+                    }
+                });
+                showOrders();
+            });
+
+            function order() {
+                let nameInfo = $('#name').val();
+                let cntInfo = $('#count option:selected').val();
+                let addressInfo = $('#address').val();
+                let phoneInfo = $('#phone').val();
+                let regPhone = /(01[0|1|6|9|7])[-](\d{3}|\d{4})[-](\d{4}$)/g;
+
+                if (nameInfo == '') {
+                    alert('이름을 입력해주세요.');
+                } else if (cntInfo == '--수량을 선택하세요--') {
+                    alert('수량을 입력해주세요.');
+                } else if (addressInfo == '') {
+                    alert('주소를 입력해주세요.');
+                } else if (phoneInfo == '') {
+                    alert('전화번호를 입력해주세요.');
+                } else if (!regPhone.test(phoneInfo)) {
+                    alert('휴대폰번호 입력 형식이 틀립니다. \n 010-0000-0000으로 입력해주세요');
+                } else {
+                    $.ajax({
+                        type: "POST",
+                        url: "/order",
+                        data: {
+                            'name_give': nameInfo,
+                            'cnt_give': cntInfo,
+                            'address_give': addressInfo,
+                            'phone_give': phoneInfo
+                        },
+                        success: function (response) { // 성공하면
+                            if (response["result"] == "success") {
+                                alert(response["msg"]);
+
+                                window.location.reload();
+                            }
+                        }
+                    })
+                }
+            }
+
+            function showOrders() {
+                $.ajax({
+                    type: "GET",
+                    url: "/order",
+                    data: {},
+                    success: function (response) {
+                        // console.log(response);
+
+                        if (response["result"] == "success") {
+                            let orderList = response['orders']
+                            for (let i = 0; i < orderList.length; i++) {
+                                let getName = orderList[i]['name'];
+                                let getCnt = orderList[i]['cnt'];
+                                let getAddress = orderList[i]['address'];
+                                let getPhone = orderList[i]['phone'];
+
+                                let tempHtml = `<tr>
+                                                    <th scope="row">${getName}</th>
+                                                    <td>${getCnt}</td>
+                                                    <td>${getAddress}</td>
+                                                    <td>${getPhone}</td>
+                                                </tr>`
+
+                                $('#order_list').append(tempHtml);
+                            }
+                        }
+                    }
+                });
+            }
+        </script>
+    </head>
+    <body>
+        <div class="wrap">
+            <div class="info">
+                <img class='image'
+                     src="https://image.istarbucks.co.kr/upload/store/skuimg/2020/07/[11108693]_20200724094824780.jpg"
+                     alt="">
+                <h1>블랙 콜드컵 710ml <span class="price">가격 : 14000원 / 개</span></h1>
+                <p>클래식한 디자인으로 스타벅스의 아름다움이 돋보이는 710ml 플라스틱 콜드컵입니다.</p>
+            </div>
+            <div id="order_box">
+                <p class="exchange">달러-원 환율: <span id="dollar-won"></span></p>
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">주문자 이름</span>
+                    </div>
+                    <input type="text" class="form-control" id="name" placeholder="" aria-label="Username"
+                           aria-describedby="basic-addon1">
+                </div>
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <label class="input-group-text" for="count">수량</label>
+                    </div>
+                    <select class="custom-select" id="count">
+                        <option selected>--수량을 선택하세요--</option>
+                        <option value="1">1</option>
+                        <option value="2">2</option>
+                        <option value="3">3</option>
+                    </select>
+                </div>
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">주소</span>
+                    </div>
+                    <input type="text" id="address" class="form-control" placeholder="" aria-label="Username"
+                           aria-describedby="basic-addon1">
+                </div>
+                <div class="input-group mb-3">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text">전화번호</span>
+                    </div>
+                    <input type="text" id="phone" class="form-control" placeholder="" aria-label="Username"
+                           aria-describedby="basic-addon1">
+                </div>
+
+                <button onclick="order()" type="submit" class="btn btn-primary">주문하기</button>
+                <table class="table" id="order_list">
+                    <thead>
+                    <tr>
+                        <th scope="col">이름</th>
+                        <th scope="col">수량</th>
+                        <th scope="col">주소</th>
+                        <th scope="col">전화번호</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <th scope="row">1</th>
+                        <td>Mark</td>
+                        <td>Otto</td>
+                        <td>@mdo</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">2</th>
+                        <td>Jacob</td>
+                        <td>Thornton</td>
+                        <td>@fat</td>
+                    </tr>
+                    <tr>
+                        <th scope="row">3</th>
+                        <td>Larry</td>
+                        <td>the Bird</td>
+                        <td>@twitter</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </body>
+</html>
